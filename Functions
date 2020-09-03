@@ -1,0 +1,156 @@
+# this loads all the functions
+import pandas as pd
+import logging
+from varclass import coverage 
+import varclass
+import plotly.express as px
+import plotly.graph_objects as go
+import csv
+
+from varclass.core.logger import logger
+from varclass.core.parameters import parameters as params
+from varclass.core.gene import gene as _gene
+
+logging.basicConfig(level=20)
+
+# only errors from varclass
+coverage.logger.setLevel(logging.ERROR)
+
+# set the assembly
+coverage.params.active_assembly("GRCh37")
+
+
+def get_mean_coverage_table(selected_chromosome):
+    #Filter raw dataset with no duplicated exons
+    Unique_exons = alldata.drop_duplicates(subset='exonid',keep='first')
+    #Filter dataset for selected chromosome, protein_coding genes only, exons
+    First_step_filtering = Unique_exons[(Unique_exons['chromosome']==selected_chromosome)&(Unique_exons['biotype']=='protein_coding')].groupby(by='geneid')
+    
+    #When selecting all autosomes
+    if selected_chromosome is 'All_Autosome':
+        First_step_filtering = Unique_exons[((Unique_exons['chromosome'] == 1)|(Unique_exons['chromosome'] == 2)|(Unique_exons['chromosome'] == 3)|(Unique_exons['chromosome'] == 4)|(Unique_exons['chromosome'] == 5)|(Unique_exons['chromosome'] == 6)|(Unique_exons['chromosome'] == 7)|(Unique_exons['chromosome'] == 8)|(Unique_exons['chromosome'] == 9)|(Unique_exons['chromosome'] == 10)|(Unique_exons['chromosome'] == 11)|(Unique_exons['chromosome'] == 12)|(Unique_exons['chromosome'] == 13)|(Unique_exons['chromosome'] == 14)|(Unique_exons['chromosome'] == 15)|(Unique_exons['chromosome'] == 16)|(Unique_exons['chromosome'] == 17)|(Unique_exons['chromosome'] == 18)|(Unique_exons['chromosome'] == 19)|(Unique_exons['chromosome'] == 20)|(Unique_exons['chromosome'] == 21)|(Unique_exons['chromosome'] == 22)) & (Unique_exons['biotype']=='protein_coding')].groupby(by='geneid')
+
+    #When selecting all chromosomes
+    if selected_chromosome is 'All_chromosome':
+        First_step_filtering = Unique_exons[((Unique_exons['chromosome'] == 1)|(Unique_exons['chromosome'] == 2)|(Unique_exons['chromosome'] == 3)|(Unique_exons['chromosome'] == 4)|(Unique_exons['chromosome'] == 5)|(Unique_exons['chromosome'] == 6)|(Unique_exons['chromosome'] == 7)|(Unique_exons['chromosome'] == 8)|(Unique_exons['chromosome'] == 9)|(Unique_exons['chromosome'] == 10)|(Unique_exons['chromosome'] == 11)|(Unique_exons['chromosome'] == 12)|(Unique_exons['chromosome'] == 13)|(Unique_exons['chromosome'] == 14)|(Unique_exons['chromosome'] == 15)|(Unique_exons['chromosome'] == 16)|(Unique_exons['chromosome'] == 17)|(Unique_exons['chromosome'] == 18)|(Unique_exons['chromosome'] == 19)|(Unique_exons['chromosome'] == 20)|(Unique_exons['chromosome'] == 21)|(Unique_exons['chromosome'] == 22)|(Unique_exons['chromosome'] == 'X')|(Unique_exons['chromosome'] == 'Y')) & (Unique_exons['biotype']=='protein_coding')].groupby(by='geneid')
+
+    
+    #Retrive the exon mean coverage table and export it as csv file 
+    exon_mean_coverage = []
+    for uid,g in First_step_filtering:
+        totallength = g["length"].sum()
+        totalcoverage = g["total_mean_coverage"].sum()
+
+        exon_mean_coverage.append({ "geneid": uid, "exon_bases":totallength, "exon_mean_coverage": totalcoverage / totallength})
+
+    exon_mean_coverage_df = pd.DataFrame(exon_mean_coverage)
+    
+    if selected_chromosome is str():
+        exon_mean_coverage_df.to_csv('exon_mean_coverage_' + selected_chromosome +'.csv')
+    
+    if selected_chromosome is not str():
+       exon_mean_coverage_df.to_csv('exon_mean_coverage_' + str(selected_chromosome)+ '.csv')
+
+    return exon_mean_coverage_df
+    
+    def coverage_analysis (selected_chromosome_for_analysis,exon_mean_coverage_dataframe):
+
+    #Filter raw dataset with no duplicated exons
+    Unique_exons = alldata.drop_duplicates(subset='exonid',keep='first')
+    #Filter genes with a mean coverage >20 and export the geneids into a list
+    mean_coverage_above_20_df = exon_mean_coverage_dataframe[exon_mean_coverage_dataframe['exon_mean_coverage']>20]
+    mean_coverage_above_20_list = mean_coverage_above_20_df['geneid'].tolist()
+
+    Above_20_individual_exon_info = Unique_exons[(Unique_exons['chromosome']==selected_chromosome_for_analysis) & (Unique_exons['biotype']=='protein_coding') & (Unique_exons['geneid'].isin(mean_coverage_above_20_list))].groupby(by='geneid')
+
+    #Filter the selected chromosomes' exon_mean_coverages information from the original dataframe(Protein coding,exons)
+    if selected_chromosome_for_analysis is 'All_Autosome':
+        Above_20_individual_exon_info = Unique_exons[((Unique_exons['chromosome'] == 1)|(Unique_exons['chromosome'] == 2)|(Unique_exons['chromosome'] == 3)|(Unique_exons['chromosome'] == 4)|(Unique_exons['chromosome'] == 5)|(Unique_exons['chromosome'] == 6)|(Unique_exons['chromosome'] == 7)|(Unique_exons['chromosome'] == 8)|(Unique_exons['chromosome'] == 9)|(Unique_exons['chromosome'] == 10)|(Unique_exons['chromosome'] == 11)|(Unique_exons['chromosome'] == 12)|(Unique_exons['chromosome'] == 13)|(Unique_exons['chromosome'] == 14)|(Unique_exons['chromosome'] == 15)|(Unique_exons['chromosome'] == 16)|(Unique_exons['chromosome'] == 17)|(Unique_exons['chromosome'] == 18)|(Unique_exons['chromosome'] == 19)|(Unique_exons['chromosome'] == 20)|(Unique_exons['chromosome'] == 21)|(Unique_exons['chromosome'] == 22)) & (Unique_exons['biotype']=='protein_coding') & (Unique_exons['geneid'].isin(mean_coverage_above_20_list))].groupby(by='geneid')
+    
+    if selected_chromosome_for_analysis is 'All_chromosome':
+        Above_20_individual_exon_info = Unique_exons[((Unique_exons['chromosome'] == 1)|(Unique_exons['chromosome'] == 2)|(Unique_exons['chromosome'] == 3)|(Unique_exons['chromosome'] == 4)|(Unique_exons['chromosome'] == 5)|(Unique_exons['chromosome'] == 6)|(Unique_exons['chromosome'] == 7)|(Unique_exons['chromosome'] == 8)|(Unique_exons['chromosome'] == 9)|(Unique_exons['chromosome'] == 10)|(Unique_exons['chromosome'] == 11)|(Unique_exons['chromosome'] == 12)|(Unique_exons['chromosome'] == 13)|(Unique_exons['chromosome'] == 14)|(Unique_exons['chromosome'] == 15)|(Unique_exons['chromosome'] == 16)|(Unique_exons['chromosome'] == 17)|(Unique_exons['chromosome'] == 18)|(Unique_exons['chromosome'] == 19)|(Unique_exons['chromosome'] == 20)|(Unique_exons['chromosome'] == 21)|(Unique_exons['chromosome'] == 22)|(Unique_exons['chromosome'] == 'X')|(Unique_exons['chromosome'] == 'Y')) & (Unique_exons['biotype']=='protein_coding') & (Unique_exons['geneid'].isin(mean_coverage_above_20_list))].groupby(by='geneid')
+    
+    Genes_MC_above_20_por_40_below_20 = []
+    for uid,g in Above_20_individual_exon_info:
+        #Calculate the proportion of gene with coverage below 20
+        pro_exons_below_20 = ((len(g[g['mean_coverage']<20]))/(len(g['mean_coverage'])))*100
+        #Add genes which had a mean coverage >20 but had a proportion of >=40% of the gene with coverage below 20 into a datafram
+        if pro_exons_below_20 >= 40:
+            Genes_MC_above_20_por_40_below_20.append({'geneid':uid,'genes which had a mean coverage >20 but had a proportion of >=40% of the gene with coverage below 20':pro_exons_below_20})
+    Analysis_table = pd.DataFrame(Genes_MC_above_20_por_40_below_20)
+        
+    
+    if selected_chromosome_for_analysis is str():
+        Analysis_table.to_csv('Analysis_table_' + selected_chromosome_for_analysis +'.csv')
+    
+    if selected_chromosome_for_analysis is not str():
+        Analysis_table.to_csv('Analysis_table_' + str(selected_chromosome_for_analysis)+ '.csv')
+
+
+    return Analysis_table
+
+
+def ploting_exon_genome_mean_coverage_comparision_bar_chart(exon_mean_coverage_dataframe):
+    i = 0
+    Number_of_genes_exon = []
+    bins = ['0-5','5-10','10-15','15-20','20-25','25-30','30-35','35-40','40-45','45-50','50-55','55-60','60-65','65-70','70-75','75-80','80-85','85-90','90-95','95-100']
+    for i in range(0,105,5):
+        number_of_genes_exon = len(exon_mean_coverage_dataframe[(exon_mean_coverage_dataframe['exon_mean_coverage']>i) & (exon_mean_coverage_dataframe['exon_mean_coverage']<=i+5)])
+        Number_of_genes_exon.append(number_of_genes_exon)
+    exon_mean_coverage_table = pd.DataFrame(list(zip(bins,Number_of_genes_exon)),columns=['Bins','Number_of_genes'])
+    
+
+    df = pd.read_csv('coverage_chr7.csv')
+    Number_of_genes_genome = []
+    for i in range(0,105,5):
+        number_of_genes_genome = len(df[(df['genome_mean_coverage']>i) & (df['genome_mean_coverage']<=i+5)])
+        Number_of_genes_genome.append(number_of_genes_genome)
+    genome_mean_coverage_table = pd.DataFrame(list(zip(bins,Number_of_genes_genome)),columns=['Bins','Number_of_genes'])
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=bins,
+                y=Number_of_genes_exon,
+                name='Exon_mean_coverage',
+                marker_color='rgb(55, 83, 109)'
+                ))
+    fig.add_trace(go.Bar(x=bins,
+                y=Number_of_genes_genome,
+                name='Genome_mean_coverage',
+                marker_color='rgb(26, 118, 255)'
+                ))
+    #fig.update_traces(texttemplate='%{text:.6s}', textposition='outside')
+    fig.update_layout(
+        title='Exon_and_genome_mean_coverage_distribution_for_Chromosome_7',
+        xaxis_tickfont_size=14,
+        yaxis=dict(
+            title='Number of genes',
+            titlefont_size=16,
+            tickfont_size=15,
+        ),
+        
+        legend=dict(
+            x=0.5,
+            y=1.0,
+            bgcolor='rgba(255, 255, 255, 0)',
+            bordercolor='rgba(255, 255, 255, 0)'
+        ),
+        
+        barmode='group',
+        bargap=0.01, # gap between bars of adjacent location coordinates.
+        bargroupgap=0.01 # gap between bars of the same location coordinate.
+    )
+
+    number_of_genes_with_low_coverage_exon = exon_mean_coverage_table.iloc[0:3]['Number_of_genes'].sum()
+    number_of_genes_with_high_coverage_exon = exon_mean_coverage_table.iloc[4:19]['Number_of_genes'].sum()
+    
+    number_of_genes_with_low_coverage_genome = genome_mean_coverage_table.iloc[0:3]['Number_of_genes'].sum()
+    number_of_genes_with_high_coverage_genome = genome_mean_coverage_table.iloc[4:19]['Number_of_genes'].sum()
+    fig2 = go.Figure(data=[go.Table(header=dict(values=['Number_of_genes_with_low_coverage(<20)', 'Number_of_genes_with_high_coverage(>20)']),
+                    cells=dict(values=[[number_of_genes_with_low_coverage_exon, number_of_genes_with_low_coverage_genome],[number_of_genes_with_high_coverage_exon,number_of_genes_with_high_coverage_genome]]))
+                        ])
+    #fig3 = go.Figure(data=[go.Table(header=dict(values=['Number_of_genes_with_low_coverage(<20)', 'Number_of_genes_with_high_coverage(>20)']),
+                    #cells=dict(values=[number_of_genes_with_low_coverage_genome, number_of_genes_with_high_coverage_genome]))
+                        #])
+    
+    return fig.show(),fig2.show()
+    
