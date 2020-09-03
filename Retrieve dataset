@@ -1,0 +1,33 @@
+Acknowledgements: This code is written with the help from Paul Qunnie gitlink: https://github.com/peq123
+
+# this loads all the functions
+import pandas as pd
+import logging
+from varclass import coverage 
+import varclass
+import plotly.express as px
+import plotly.graph_objects as go
+import csv
+
+from varclass.core.logger import logger
+from varclass.core.parameters import parameters as params
+from varclass.core.gene import gene as _gene
+
+logging.basicConfig(level=20)
+
+# only errors from varclass
+coverage.logger.setLevel(logging.ERROR)
+
+# set the assembly
+coverage.params.active_assembly("GRCh37")
+
+
+coverage.params.data_directory= 'project diectory'
+
+exome_coverage = "file with exome or genome coverage data"
+gene_biomart_download = 'file with gene information'
+
+filelist = coverage.separatechromosome(exome_coverage) #  separate out the chromosomes into individual files. best to do the work in batches to reduce work if errors occur
+
+#store files in local and read data
+alldata = coverage.calculate_coverage(gene_biomart_download,filelist,"")
